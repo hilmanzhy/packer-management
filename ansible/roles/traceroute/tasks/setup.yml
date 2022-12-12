@@ -1,0 +1,51 @@
+- name: checklist
+  stat:
+    path: "{{ directory }}"
+  register: directory_result
+  tags: create
+
+- name: create dirs
+  file:
+    path: "{{ directory }}/{{ item }}"
+    state: directory
+    recurse: "{{ recurse }}"
+    owner: "{{ owner }}"
+    group: "{{ group }}"
+    mode: "{{ mode }}"
+  when: not directory_result.stat.exists
+  with_items: "{{ item }}"
+  tags: create
+
+- name: remove dirs
+  file:
+    path: "{{ directory }}"
+    state: absent
+  tags: remove
+
+- name: upload file
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: "{{ owner }}"
+    group: "{{ group }}"
+    mode: "{{ mode }}"
+  with_items: "{{ directory }}"
+#  notify:
+#    - traceroute
+  tags: upload
+
+#- name: daemon-reload
+#  systemd:
+#    state: restarted
+#    daemon_reload: yes
+#    name: traceroute
+#    enabled: True
+#  tags: upload
+- name: Get files update
+  command: find "{{var}}" -mmin -60
+  register: file_result
+  tags: update
+
+- debug:
+    var: file_result.stdout_lines
+  tags: update

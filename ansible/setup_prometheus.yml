@@ -1,0 +1,24 @@
+- hosts: aws
+  gather_facts: no
+  become: true
+  become_user: root
+  vars:
+    command: "{{ item.command }}"
+    deploy:
+      - { command: 'useradd --no-create-home --shell /bin/false prometheus' }
+      - { command: 'mkdir /var/lib/prometheus' }
+      - { command: 'chown prometheus:prometheus /etc/prometheus' }
+      - { command: 'chown prometheus:prometheus /var/lib/prometheus' }
+      - { command: 'curl -LO https://github.com/prometheus/prometheus/releases/download/v2.17.1/prometheus-2.17.1.linux-amd64.tar.gz' }
+      - { command: 'tar xzvf prometheus-2.17.1.linux-amd64.tar.gz' }
+      - { command: 'cp prometheus-2.17.1.linux-amd64/prometheus /usr/local/bin' }
+      - { command: 'cp prometheus-2.17.1.linux-amd64/promtool /usr/local/bin' }
+      - { command: 'chown prometheus:prometheus /usr/local/bin/prometheus' }
+      - { command: 'chown prometheus:prometheus /usr/local/bin/promtool' }
+      - { command: 'cp -r prometheus-2.17.1.linux-amd64/consoles /etc/prometheus/' }
+      - { command: 'cp -r prometheus-2.17.1.linux-amd64/console_libraries /etc/prometheus/' }
+      - { command: 'chown -R prometheus:prometheus /etc/prometheus/consoles' }
+      - { command: 'chown -R prometheus:prometheus /etc/prometheus/console_libraries' }
+
+  roles:
+    - pingtest

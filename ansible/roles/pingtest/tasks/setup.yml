@@ -1,0 +1,49 @@
+- name: configure prometheus
+  command: "{{ item.command }}"
+  with_items: "{{ deploy }}"
+  tags: setup
+
+- name: checklist
+  stat:
+    path: "{{ directory }}"
+  register: directory_result
+  tags: create
+
+- name: create dirs
+  file:
+    path: "{{ directory }}"
+    state: directory
+    owner: "{{ owner }}"
+    group: "{{ group }}"
+    mode: "{{ mode }}"
+  when: not directory_result.stat.exists
+  tags: create
+
+- name: upload file
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ mode }}"
+  with_items: "{{ directory }}"
+#  notify:
+#    - ping_exporter
+#    - prometheus
+  tags: upload
+
+- name: reload prometheus
+  systemd:
+    state: restarted
+    daemon-reload: yes
+    name: prometheus
+    enabled: True
+  tags: reload-prome
+
+- name: reload ping exporter
+  systemd:
+    state: restarted
+    daemon-reload: yes
+    name: ping_exporter
+    enabled: True
+  tags: reload-ping

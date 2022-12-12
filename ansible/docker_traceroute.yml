@@ -1,0 +1,20 @@
+- hosts: default
+  gather_facts: no
+  become: true
+  become_user: "{{ user }}"
+  vars:
+     name_container: traceroute
+     env: TZ=Asia/Jakarta
+     volumes: /opt/traceroute:/app
+     memory: 1G
+     kernel_memory: 1G
+     cpus: 0.5
+     dns: 8.8.8.8
+     image: "{{ image_traceroute }}"
+     ansible_python_interpreter: /usr/bin/python3
+
+  vars_files:
+    - /home/anonym/research/packer/packer-management/ansible/env.json
+
+  roles:
+    - docker-deployment

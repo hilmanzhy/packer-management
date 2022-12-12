@@ -1,0 +1,15 @@
+- hosts: default
+  gather_facts: no
+  become: true
+  become_user: "{{ user }}"
+  vars:
+     docker_login:
+     name: "{{ docker_name }}"
+     passwd: "{{ docker_passwd }}"
+     ansible_python_interpreter: /usr/bin/python3
+
+  vars_files:
+    - /home/anonym/research/packer/packer-management/ansible/env.json
+
+  roles:
+    - docker-deployment

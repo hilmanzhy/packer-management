@@ -1,0 +1,6 @@
+- name: speedtest
+  systemd:
+    state: started
+    daemon_reload: yes
+    name: speedtest-cli
+    enabled: True

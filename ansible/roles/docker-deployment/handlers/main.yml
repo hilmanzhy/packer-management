@@ -1,0 +1,2 @@
+- name: stop container {{ name_container }}
+  command: docker stop {{ name_container }}

@@ -1,0 +1,12 @@
+- name: ping_exporter
+  systemd:
+    state: started
+    daemon_reload: yes
+    name: ping_exporter
+    enabled: True  
+
+- name: prometheus
+  systemd:
+    state: started
+    name: prometheus  
+    enabled: True

@@ -1,0 +1,60 @@
+#- name: checklist python3
+#  stat:
+#    apt:
+#      name:
+#        python3-pip
+#        python3
+#  register: python3_pip
+#  tags: install3
+
+#- name: install python3-pip
+#  apt:
+#    name:
+#    - python3
+#    - python3-pip
+#  when: not python3_pip.stat.exists
+#  tags: install3
+
+#- name: checklist python
+#  stat:
+#    apt:
+#      name:
+#        python-pip
+#        python
+#  register: python_pip
+#  tags: pip
+
+#- name: install python3-pip
+#  apt:
+#    name:
+#    - python3
+#    - python-pip3
+#  when: not python_pip3.stat.exists
+#  tags: pip3
+
+- name: pip-install
+  pip:
+    name: "{{ name }}"
+    version: "{{ version | default(omit) }}"
+    executable: pip
+  tags: pip
+
+- name: pip3-install
+  pip:
+    name: "{{ name }}"
+    version: "{{ version | default(omit) }}"
+    executable: pip3
+  tags: pip3
+
+- name: Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 86400
+  changed_when: false
+  tags: package
+
+- name: Pakcage Install
+  apt:
+    name: "{{ name }}"
+    state: latest
+  tags: package

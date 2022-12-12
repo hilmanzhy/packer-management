@@ -1,0 +1,15 @@
+- hosts: default
+  gather_facts: no
+  become: true
+  become_user: root
+  vars:
+    username: "{{ git_user }}"
+    password: "{{ git_passwd }}"
+    repo: prometheus
+    dest: /etc/prometheus
+#    dest: /home/pi/prometheus
+  vars_files:
+    - ansible/env.json
+
+  roles:
+   - docker-deployment

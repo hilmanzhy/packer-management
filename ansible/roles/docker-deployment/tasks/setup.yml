@@ -1,0 +1,76 @@
+- name: Login private registry
+  docker_login:
+#    registry: your.private.registry.io
+    username: "{{ name }}"
+    password: "{{ passwd }}"
+    reauthorize: yes
+  tags: login
+
+- name: run container {{ name_container }}
+  docker_container:
+    name: "{{ name_container }}"
+    state: started
+    memory: "{{ memory }}"
+    kernel_memory: "{{ kernel_memory }}"
+    cpus: "{{ cpus }}"
+    dns_servers: "{{ dns }}"
+    image: "{{ image }}"
+    pull: true
+    env: "{{ env }}"
+    restart_policy: unless-stopped
+    volumes: "{{ volumes }}"
+  notify: stop container {{ name_container }}
+  tags: pull_docker
+
+- name: run container {{ name_container }}
+  docker_container:
+    name: "{{ name_container }}"
+    state: started
+    memory: "{{ memory }}"
+    kernel_memory: "{{ kernel_memory }}"
+    cpus: "{{ cpus }}"
+    dns_servers: "{{ dns }}"
+    image: "{{ image }}"
+    published_ports: "{{ publish_port }}"
+    pull: true
+    env: "{{ env }}"
+    restart_policy: unless-stopped
+    volumes: "{{ volumes }}"
+  notify: stop container {{ name_container }}
+  tags: pull_docker_ping
+
+- name: checklist
+  stat:
+    path: "{{ directory }}"
+  register: directory_result
+  tags: create
+
+- name: create directory
+  file:
+    path: "{{ directory }}"
+    state: directory
+    owner: "{{ owner }}"
+    group: "{{ group }}"
+    mode: "{{ mode }}"
+  when: not directory_result.stat.exists
+  tags: create
+
+- name: copy file
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ mode }}"
+  with_items: "{{ directory }}"
+  tags: upload
+
+- name: git clone
+  git:
+    repo: https://{{ username }}:{{ password }}@git.immobisp.com/Hilmanzhy/{{ repo }}.git
+    dest: "{{ dest }}"
+    update: yes
+    clone: yes
+    force: yes
+  tags: git
+

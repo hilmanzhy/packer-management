@@ -1,0 +1,12 @@
+- hosts: default
+  gather_facts: no
+  become: true
+  become_user: root
+  vars:
+    ports: "{{ port_ssh }}"
+
+  vars_files:
+    - /home/anonym/research/packer/packer-management/ansible/env.json
+
+  roles:
+    - sshd

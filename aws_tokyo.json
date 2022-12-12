@@ -1,0 +1,179 @@
+{
+  "variables": {
+      "aws_access_key": "{{env `aws_access_key`}}",
+      "aws_secret_key": "{{env `aws_secret_key`}}",
+      "singapore_vpc_id": "{{env `singapore_vpc_id`}}",
+      "singapore_subnet_id": "{{env `singapore_subnet_id`}}",
+      "singapore_security_group_id": "{{env `singapore_security_group_id`}}",
+      "aws_zerotier": "{{env `aws_zerotier`}}"
+  },
+  "builders": [
+    {
+      "type": "amazon-ebs",
+      "access_key": "{{user `aws_access_key`}}",
+      "secret_key": "{{user `aws_secret_key`}}",
+      "vpc_id": "{{user `singapore_vpc_id`}}",
+      "subnet_id": "{{user `singapore_subnet_id`}}",
+      "region": "ap-southeast-1",
+      "source_ami": "ami-02045ebddb047018b",
+      "instance_type": "t3.small",
+      "security_group_id": "{{user `singapore_security_group_id`}}",
+      "ssh_username": "ubuntu",
+      "ssh_port": 22,
+      "ssh_keypair_name": "aws-supernet",
+      "ssh_private_key_file": "/home/anonym/immobi/remote_server/aws.pem",
+      "ami_name": "packer-quick-start {{timestamp}}"
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "shell",
+        "inline": [
+          "sudo add-apt-repository universe",
+          "sudo apt-get update",
+          "sudo apt install -y python3-pip",
+          "sudo pip3 install docker",
+          "sudo curl -fsSL https://get.docker.com -o get-docker.sh",
+          "sudo sh get-docker.sh",
+          "sudo usermod -aG docker ubuntu",
+          "sudo curl -s https://install.zerotier.com | sudo bash",
+          "sudo zerotier-cli join {{user `aws_zerotier`}}",
+          "sudo mkdir /home/ubuntu/script"
+        ]
+    },
+    {
+      "type": "ansible",
+          "user": "ubuntu",
+          "use_proxy": false,
+          "keep_inventory_file": true,
+          "playbook_file": "ansible/git_clone_python.yml",
+          "extra_arguments": [
+            "-t",
+            "git",
+            "--extra-vars",
+            "\"ansible_user=ubuntu ansible_host={{ build `Host` }} ansible_port=22 ansible_ssh_common_args='-o StrictHostKeyChecking=no'\""
+          ],
+          "ansible_env_vars": [
+            "ANSIBLE_HOST_KEY_CHECKING=False"
+          ]
+    },
+    {
+      "type": "ansible",
+          "user": "ubuntu",
+          "use_proxy": false,
+          "keep_inventory_file": true,
+          "playbook_file": "ansible/git_clone_prometheus.yml",
+          "extra_arguments": [
+            "-t",
+            "git",
+            "--extra-vars",
+            "\"ansible_user=ubuntu ansible_host={{ build `Host` }} ansible_port=22 ansible_ssh_common_args='-o StrictHostKeyChecking=no'\""
+          ],
+          "ansible_env_vars": [
+            "ANSIBLE_HOST_KEY_CHECKING=False"
+          ]
+    },
+    {
+      "type": "shell",
+        "inline": [
+          "sudo cp -r /home/ubuntu/script/* /opt",
+          "sudo useradd --no-create-home --shell /bin/false prometheus",
+          "sudo mkdir /var/lib/prometheus",
+          "sudo chown prometheus:prometheus /etc/prometheus",
+          "sudo chown prometheus:prometheus /var/lib/prometheus",
+          "sudo curl -LO https://github.com/prometheus/prometheus/releases/download/v2.17.1/prometheus-2.17.1.linux-amd64.tar.gz",
+          "sudo tar xzvf prometheus-2.17.1.linux-amd64.tar.gz",
+          "sudo cp prometheus-2.17.1.linux-amd64/prometheus /usr/local/bin",
+          "sudo cp prometheus-2.17.1.linux-amd64/promtool /usr/local/bin",
+          "sudo chown prometheus:prometheus /usr/local/bin/prometheus",
+          "sudo chown prometheus:prometheus /usr/local/bin/promtool",
+          "sudo cp -r prometheus-2.17.1.linux-amd64/consoles /etc/prometheus/",
+          "sudo cp -r prometheus-2.17.1.linux-amd64/console_libraries /etc/prometheus/",
+          "sudo chown -R prometheus:prometheus /etc/prometheus/consoles",
+          "sudo chown -R prometheus:prometheus /etc/prometheus/console_libraries"
+        ]
+    },
+    {
+      "type": "shell",
+        "inline": [
+          "sudo cp /etc/prometheus/prometheus.service /etc/systemd/system/prometheus.service",
+          "sudo chown prometheus:prometheus /etc/prometheus/prometheus.yml",
+          "sudo systemctl daemon-reload",
+          "sudo systemctl enable prometheus",
+          "sudo systemctl start prometheus"
+        ]
+    },
+    {
+      "type": "ansible",
+          "user": "ubuntu",
+          "use_proxy": false,
+          "keep_inventory_file": true,
+          "playbook_file": "ansible/setup_docker.yml",
+          "extra_arguments": [
+            "-t",
+            "login",
+            "--extra-vars",
+            "\"ansible_user=ubuntu ansible_host={{ build `Host` }} ansible_port=22 ansible_ssh_common_args='-o StrictHostKeyChecking=no'\""
+          ],
+          "ansible_env_vars": [
+            "ANSIBLE_HOST_KEY_CHECKING=False"
+          ]
+    },
+    {
+      "type": "ansible",
+          "user": "ubuntu",
+          "use_proxy": false,
+          "keep_inventory_file": true,
+          "playbook_file": "ansible/docker_traceroute.yml",
+          "extra_arguments": [
+            "-t",
+            "pull_docker",
+            "--extra-vars",
+            "\"ansible_user=ubuntu ansible_host={{ build `Host` }} ansible_port=22 ansible_ssh_common_args='-o StrictHostKeyChecking=no'\""
+          ],
+          "ansible_env_vars": [
+            "ANSIBLE_HOST_KEY_CHECKING=False"
+          ]
+    },
+    {
+      "type": "ansible",
+          "user": "ubuntu",
+          "use_proxy": false,
+          "keep_inventory_file": true,
+          "playbook_file": "ansible/docker_ping.yml",
+          "extra_arguments": [
+            "-t",
+            "pull_docker_ping",
+            "--extra-vars",
+            "\"ansible_user=ubuntu ansible_host={{ build `Host` }} ansible_port=22 ansible_ssh_common_args='-o StrictHostKeyChecking=no'\""
+          ],
+          "ansible_env_vars": [
+            "ANSIBLE_HOST_KEY_CHECKING=False"
+          ]
+    },
+    {
+      "type": "ansible",
+          "user": "ubuntu",
+          "use_proxy": false,
+          "keep_inventory_file": true,
+          "playbook_file": "ansible/docker_api.yml",
+          "extra_arguments": [
+            "-t",
+            "pull_docker",
+            "--extra-vars",
+            "\"ansible_user=ubuntu ansible_host={{ build `Host` }} ansible_port=22 ansible_ssh_common_args='-o StrictHostKeyChecking=no'\""
+          ],
+          "ansible_env_vars": [
+            "ANSIBLE_HOST_KEY_CHECKING=False"
+          ]
+    },
+    {
+      "type": "shell",
+        "inline": [
+          "sudo docker stop traceroute",
+          "sudo docker stop ping_exporter",
+          "sudo docker stop api"
+        ]
+    }
+  ]
+}

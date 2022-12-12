@@ -1,0 +1,22 @@
+- hosts: default
+  gather_facts: no
+  become: true
+#  become_user: root
+  become_user: "{{ user }}"
+  vars:
+     name_container: ping_exporter
+     env: TZ=Asia/Jakarta
+     volumes: /opt/ping_exporter:/app
+     memory: 1G
+     kernel_memory: 1G
+     cpus: 0.5
+     dns: 8.8.8.8
+     image: "{{ image_ping }}"
+     ansible_python_interpreter: /usr/bin/python3
+     publish_port: "0.0.0.0:9102:9102"
+
+  vars_files:
+    - /home/anonym/research/packer/packer-management/ansible/env.json
+
+  roles:
+    - docker-deployment
